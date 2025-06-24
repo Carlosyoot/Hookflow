@@ -1,0 +1,7 @@
+{
+    "URL1": "redis://127.0.0.1:6379",
+    "URL2": "http://localhost:7878/webhook",
+    "INSPECT-JSON": "http://localhost:4545/inspect/",
+    "DEBUG": true,
+    "NAME": "Webhook Center"
+}
