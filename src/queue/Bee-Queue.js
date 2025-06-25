@@ -1,27 +1,21 @@
 import Bee from 'bee-queue';
-import redisQueue from '../Client/QueueClient.js'; 
+import redis from '../Client/QueueClient.js';
 import 'dotenv/config';
 
-const queue = new Bee("Fila:processamento", {
-  redis: redisQueue,
-  removeOnSuccess: false,
-  removeOnFailure: false,
-  isWorker: true,
-});
+const queue = new Bee('Fila:processamento', { redis, isWorker: true });
+const filaErro = new Bee('Fila:erro', { redis });
 
-const filaErro = new Bee("Fila:erro", { redis: redisQueue });
 
 async function QueueProcess(job) {
   try {
     const { id } = job.data;
     if (!id) throw new Error('ID ausente');
-    if (id === 999) {
-  throw new Error('Erro forçado para teste');
-}
-    await redisQueue.xAdd('estresse', '*', { id: id.toString() });
+    if (id === 999) throw new Error('Erro forçado');
+
+    await redis.xadd('estresse', '*', 'id', id.toString());
     return `ID ${id} adicionado à sucesso.`;
   } catch (err) {
-    console.error(`Erro no job ${job.id}:`, err.message);
+    console.error(`[WORKER] Erro job ${job.id}: ${err.message}`);
     throw err;
   }
 }
