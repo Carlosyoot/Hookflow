@@ -1,21 +1,22 @@
 import express from 'express';
-import { createClient } from 'redis';
-import Logger from '../../console/Logger.js'; 
-import { adicionarNaFila } from '../RedisHandler/RedisWorkers.js';
-
-const redis = createClient({ url: process.env.URL_REDIS });
-await redis.connect();
+import queue from '../Client/BeeClient.js';
 
 const router = express.Router();
-const logger = new Logger();
 
-router.post('/nifi/confirm/:id', (req, res) => {
-  const { id } = req.params;
-  const mathId = Number(id) * 3;
+router.post('/nifi/confirm/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID inválido ou ausente' });
+  }
 
-  adicionarNaFila(mathId.toString());
-  logger.info(`Enfileirado ID ${id} como ${mathId}`);
-  res.status(200).json({ message: 'Enfileirado', id: mathId });
+  try {
+    await queue.createJob({ id }).retries(3).backoff('exponential', 2000).save();
+    console.info(`[API] Job criado ID ${id}`);
+    res.status(202).json({ message: 'Job enfileirado com sucesso', id });
+  } catch (err) {
+    console.error(`[API] Falha ao enfileirar job: ${err.message}`);
+    res.status(500).json({ message: 'Erro ao enfileirar job' });
+  }
 });
 
 export default router;
