@@ -1,5 +1,5 @@
 import express from "express";
-import Manager from "../security/UserRoles.js";
+import { Manager } from "../security/UserRoles.js";
 import { AddClientMiddleware, GetAllClientsMiddleware, GetClientByCNPJMiddleware, DeleteClientMiddleware } from "../middlewares/ClientMiddleware.js";
 
 

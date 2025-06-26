@@ -1,6 +1,7 @@
 import { encrypt, generateSecretWithSalt } from '../security/Encoder.js';
 import pool from '../Client/OracleCliente.js';
-import { getCache, setCache } from "../utils/Cache.js";
+import { getCache, setCache, invalidateCache } from "../utils/DynamicCache.js";
+import { removeClientFromSecretCache, addClientToSecretCache } from '../utils/SecretsCache.js';
 
 
 
@@ -36,8 +37,13 @@ export async function AddClientMiddleware(req,res,next){
             { autoCommit: true }
         );
 
+        addClientToSecretCache(secret_enc, nome);
+        invalidateCache('CLIENTES:ALL'); 
+        invalidateCache(`CLIENTES:${cnpj}`); 
+
         await conn.close();
-            return res.status(201).json({ success: true, cnpj, secret });
+            
+        return res.status(201).json({ success: true, cnpj, secret });
 
     } catch (err) {
         console.error('[ORACLE ERROR]', err);
@@ -110,14 +116,25 @@ export async function DeleteClientMiddleware(req, res) {
     try {
         const conn = await pool.getConnection();
 
+        const resultGet = await conn.execute(
+            `SELECT SECRET_ENC FROM CLIENTES_API WHERE CNPJ = :cnpj`, [cnpj]
+        );
+
+        if (resultGet.rows.length === 0) {
+            await conn.close();
+            return res.status(404).json({ error: 'Cliente não encontrado para exclusão' });
+        }
+
+        const [secret_enc] = resultGet.rows[0];
+
         const result = await conn.execute(
             `DELETE FROM CLIENTES_API WHERE CNPJ = :cnpj`, [cnpj], { autoCommit: true });
 
-        await conn.close();
+        invalidateCache('CLIENTES:ALL'); 
+        invalidateCache(`CLIENTES:${cnpj}`); 
+        removeClientFromSecretCache(secret_enc); 
 
-        if (result.rowsAffected === 0) {
-            return res.status(404).json({ error: 'Cliente não encontrado para exclusão' });
-        }
+        await conn.close();
 
         return res.status(200).json({ success: true, cnpj });
     } catch (err) {
