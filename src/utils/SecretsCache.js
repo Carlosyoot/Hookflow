@@ -2,7 +2,7 @@ import NodeCache from 'node-cache';
 import pool from '../Client/OracleCliente.js';
 import { encrypt } from '../security/Encoder.js';
 
-const staticCache = new NodeCache({ stdTTL: 0, checkperiod: 0 }); // sem expiração
+const staticCache = new NodeCache({ stdTTL: 0, checkperiod: 0 }); 
 
 export async function preloadClientSecrets() {
     const conn = await pool.getConnection();
