@@ -1,6 +1,7 @@
 import Bee from 'bee-queue';
 import { FilaErro } from '../Client/BeeClient.js';
 import RedisClient from '../Client/QueueClient.js';
+import { request } from 'undici';
 import 'dotenv/config';
 
 const queue = new Bee('Fila:processamento', { 
@@ -10,16 +11,29 @@ const queue = new Bee('Fila:processamento', {
 
 
 async function QueueProcess(job) {
-  try {
-    const { id } = job.data;
-    if (!id) throw new Error('ID ausente');
-    if (id === 999) throw new Error('Erro forçado');
+  
+  const { evento, data, client } = job.data;
 
-    await RedisClient.xadd('estresse', '*', 'id', id.toString());
-    return `ID ${id} adicionado à sucesso.`;
-  } catch (err) {
-    console.error(`[WORKER] Erro job ${job.id}: ${err.message}`);
-    throw err;
+  try {
+        const { statusCode } = await request("http://localhost:7878/nifi",{
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(job.data),
+          signal: AbortSignal.timeout(5000)
+        });
+
+        if( statusCode < 200 || statusCode >= 300) {
+          throw new Error(`Falha no envio: status HTTP ${statusCode}`)
+        }
+
+        return `Evento  ${evento} enviado com sucesso para endpoint externo`
+  } catch (error) {
+    
+        console.error(`[WORKER] Falha ao enviar evento para o endpoint externo: ${error.message}`);
+        throw error;
+
   }
 }
 
