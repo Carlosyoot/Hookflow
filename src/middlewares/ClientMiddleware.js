@@ -14,7 +14,8 @@ export async function AddClientMiddleware(req,res,next){
         return res.status(400).json({ error: `Campos obrigatórios ausentes: ${missing.join(', ')}` });
     }
 
-    const {  cnpj, nome } = req.body;
+    const cnpj = req.body.cnpj.trim();
+    const nome = req.body.nome.trim();
 
     const secret = generateSecretWithSalt();
     const secret_enc = encrypt(secret);
@@ -43,7 +44,7 @@ export async function AddClientMiddleware(req,res,next){
 
         await conn.close();
             
-        return res.status(201).json({ success: true, cnpj, secret });
+        return res.status(201).json({ success: true, token: secret });
 
     } catch (err) {
         console.error('[ORACLE ERROR]', err);
