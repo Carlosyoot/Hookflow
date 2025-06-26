@@ -1,11 +1,16 @@
 import Bee from 'bee-queue';
-import redis from './QueueClient.js';
+import RedisClient from './QueueClient.js';
 
-const queue = new Bee('Fila:processamento', {
-  redis,
+export const FilaProcessamento = new Bee('Fila:processamento', {
+  RedisClient,
   removeOnSuccess: false,
   removeOnFailure: false,
   isWorker: false,
 });
 
-export default queue;
+export const FilaErro = new Bee('Fila:erro', {
+  RedisClient,
+  removeOnSuccess: false,
+  removeOnFailure: false,
+  isWorker: false,
+});

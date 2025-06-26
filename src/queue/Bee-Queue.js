@@ -1,9 +1,12 @@
 import Bee from 'bee-queue';
-import redis from '../Client/QueueClient.js';
+import { FilaErro } from '../Client/BeeClient.js';
+import RedisClient from '../Client/QueueClient.js';
 import 'dotenv/config';
 
-const queue = new Bee('Fila:processamento', { redis, isWorker: true });
-const filaErro = new Bee('Fila:erro', { redis });
+const queue = new Bee('Fila:processamento', { 
+  RedisClient, 
+  isWorker: true 
+});
 
 
 async function QueueProcess(job) {
@@ -12,7 +15,7 @@ async function QueueProcess(job) {
     if (!id) throw new Error('ID ausente');
     if (id === 999) throw new Error('Erro forçado');
 
-    await redis.xadd('estresse', '*', 'id', id.toString());
+    await RedisClient.xadd('estresse', '*', 'id', id.toString());
     return `ID ${id} adicionado à sucesso.`;
   } catch (err) {
     console.error(`[WORKER] Erro job ${job.id}: ${err.message}`);
@@ -39,7 +42,7 @@ async function iniciarWorker() {
     console.error(`[WORKER] Job ${job.id} falhou permanentemente. Erro: ${err.message}`);
 
     try {
-        await filaErro.createJob({
+        await FilaErro.createJob({
         ...job.data,             
         Error: err.message     
     }).save();

@@ -1,5 +1,6 @@
 import IORedis from 'ioredis';
 import 'dotenv/config';
 
-const redis = new IORedis(process.env.URL_REDIS);
-export default redis;
+const RedisClient = new IORedis(process.env.URL_REDIS);
+
+export default RedisClient;

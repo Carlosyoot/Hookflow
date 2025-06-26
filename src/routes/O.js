@@ -1,5 +1,5 @@
 import express from 'express';
-import ADMIN from '../security/middleware/UserRoles.js';
+import ADMIN from '../security/UserRoles.js';
 
 const router =  express.Router();
 

@@ -9,6 +9,7 @@ function getKey() {
     if (!secret) {
         throw new Error ('ENCRYPTION SECRET não definida no .env');
     }
+    return crypto.createHash('sha256').update(secret).digest();
 }
 
 export function encrypt(text){
@@ -24,4 +25,11 @@ export function decrypt(encryptedText){
     const decipher = crypto.createCipheriv(algorith,key,iv);
     const decrypted = Buffer.concat([decipher.update(encrypted),decipher.final()]);
     return decrypted.toString('utf8');
+}
+
+export function generateSecretWithSalt(mainLength = 16, saltLength = 4) {
+    const main = crypto.randomBytes(mainLength);
+    const salt = crypto.randomBytes(saltLength);
+    const combined = Buffer.concat([main, salt]);
+    return combined.toString('hex').slice(0, mainLength * 2); 
 }
