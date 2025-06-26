@@ -4,7 +4,7 @@ import RedisClient from '../Client/QueueClient.js';
 import 'dotenv/config';
 
 const queue = new Bee('Fila:processamento', { 
-  RedisClient, 
+  redis: RedisClient, 
   isWorker: true 
 });
 

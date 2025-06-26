@@ -1,3 +1,5 @@
+import { FilaProcessamento } from "../Client/BeeClient.js";
+
 export async function AddEvent(req, res, next){
     
     const requiredFields = ['evento', 'data'];
@@ -14,11 +16,18 @@ export async function AddEvent(req, res, next){
     const { evento, data } = req.body;
     const { client } = req; 
 
-    return res.status(200).json({
-    sucesso: true,
-    mensagem: `Evento recebido com sucesso.`,
-    cliente: client?.nome || 'Desconhecido',
-    evento,
-    dados: data
-  });
+    try{
+        const job = await FilaProcessamento
+            .createJob({evento, data, client: client?.nome})
+            .retries(3)
+            .backoff('exponential', 2000)
+            .save();
+
+        return res.sendStatus(202);
+    }
+    catch (err) {
+        
+        console.error('[Webhook] Falha ao enfileirar evento:', err);
+        return res.status(500).json({ erro: 'Erro ao enfileirar evento.' });
+    }
 }
