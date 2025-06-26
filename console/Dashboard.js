@@ -3,6 +3,7 @@ import Arena from 'bull-arena';
 
 const redisConfig = { url: process.env.URL_REDIS };
 
+const arenaMiddleware = 
 Arena({
   Bee,
   queues: [
@@ -26,8 +27,7 @@ Arena({
     },*/
   ],
 }, {
-  basePath: '/arena',
-  disableListen: false,
+  disableListen: true,
 });
 
-console.log('Arena rodando em http://localhost:4567/arena');
+export default arenaMiddleware;
