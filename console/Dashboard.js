@@ -18,13 +18,13 @@ Arena({
       name: 'Fila:erro',
       hostId: 'Servidor Redis',
       queue: new Bee('Fila:erro', { redis: redisConfig }),
-    }/*
+    },
     {
       type: 'bee',
       name: 'Fila:nifi',
       hostId: 'Servidor Redis',
       queue: new Bee('Fila:nifi', { redis: redisConfig }),
-    },*/
+    },
   ],
 }, {
   disableListen: true,

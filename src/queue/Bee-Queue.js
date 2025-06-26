@@ -14,13 +14,20 @@ async function QueueProcess(job) {
   
   const { evento, data, client } = job.data;
 
+  const payload = {
+    QueueJob: job.id,
+    evento,
+    data,
+    client
+  }
+
   try {
         const { statusCode } = await request("http://localhost:7878/nifi",{
           method: "POST",
           headers: {
             "content-type": "application/json"
           },
-          body: JSON.stringify(job.data),
+          body: JSON.stringify(payload),
           signal: AbortSignal.timeout(5000)
         });
 
@@ -30,11 +37,10 @@ async function QueueProcess(job) {
 
         return `Evento  ${evento} enviado com sucesso para endpoint externo`
   } catch (error) {
-    
-        console.error(`[WORKER] Falha ao enviar evento para o endpoint externo: ${error.message}`);
-        throw error;
-
-  }
+      const mensagemErro = error?.message || error?.cause?.message || JSON.stringify(error);
+      console.error(`[WORKER] Falha ao enviar evento para o endpoint externo: ${mensagemErro}`);
+      throw new Error(mensagemErro); 
+}
 }
 
 async function iniciarWorker() {
