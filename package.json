@@ -12,8 +12,11 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@bull-board/api": "^6.10.1",
+    "@bull-board/express": "^6.10.1",
     "bee-queue": "^1.7.1",
     "bull-arena": "^4.5.1",
+    "bullmq": "^5.56.0",
     "compression": "^1.8.0",
     "crypto": "^1.0.1",
     "dotenv": "^16.5.0",
