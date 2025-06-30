@@ -1,6 +1,23 @@
 import { Worker } from "bullmq";
 import RedisClient from "../Client/QueueClient.js";
 
+
+
+async function Clear(queue) {
+    const limite = 0; 
+    const Estados = ['completed', 'failed', 'active'];
+    const resumo = [];
+
+    for (const status of Estados) {
+        const removidos = await queue.clean(limite, 1000, status);
+        const msg = `[Limpeza agendada] Apagado ${removidos} jobs com status: ${status}`;
+        console.log(msg);
+        resumo.push(msg);
+    }
+
+    return resumo.join('\n');
+}
+
 const worker = new Worker("Nifi", async (job) => {
     const { evento, data, client, status, error, motivo } = job.data;
 
@@ -11,7 +28,6 @@ const worker = new Worker("Nifi", async (job) => {
 
     if (error) {
         console.warn(`[NIFI:ERRO] Evento ${evento} do cliente ${client} falhou com erro: ${error} | Motivo: ${motivo ?? 'não informado'}`);
-        throw new Error(`Erro no evento ${evento}: ${error}`);
     }
 
     throw new Error(`Job ${job.id} inválido ou malformado: sem status ou error.`);
@@ -25,7 +41,7 @@ const worker = new Worker("Nifi", async (job) => {
             exponential: (attemptsMade) => Math.pow(2, attemptsMade) * 1000,
         },
     },
-    attempts: 5,
+    attempts: 1,
     backoff: {
         type: 'exponential',
         delay: 2000,

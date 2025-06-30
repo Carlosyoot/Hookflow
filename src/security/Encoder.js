@@ -20,10 +20,10 @@ export function encrypt(text){
 }
 
 export function decrypt(encryptedText){
-    const key =  getKey();
-    const encrypted = Buffer.from(encryptedText,'base64');
-    const decipher = crypto.createCipheriv(algorith,key,iv);
-    const decrypted = Buffer.concat([decipher.update(encrypted),decipher.final()]);
+    const key = getKey();
+    const encrypted = Buffer.from(encryptedText, 'base64');
+    const decipher = crypto.createDecipheriv(algorith, key, iv); 
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
     return decrypted.toString('utf8');
 }
 

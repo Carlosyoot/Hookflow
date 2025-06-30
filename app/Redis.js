@@ -7,6 +7,7 @@ import Utils from '../src/routes/UtilsRoutes.js';
 import ClientRoutes from '../src/routes/ClientRoutes.js';
 import ManagerRoutes from '../src/routes/ManagerRoutes.js';
 import { preloadClientSecrets } from '../src/utils/SecretsCache.js';
+import { ClearQueues } from '../src/utils/Scheduling.js';
 
 const app = express();
 const port = process.env.PORT;
@@ -30,6 +31,7 @@ preloadClientSecrets()
   .then(() => {
     app.listen(port, () => {
       console.log(`Servidor iniciado na porta ${port}`);
+      ClearQueues();
     });
   })
   .catch((err) => {

@@ -1,6 +1,6 @@
 import { Queue, Worker } from "bullmq";
 import RedisClient from "../Client/QueueClient.js";
-import { Nifi } from "../Client/BullClient.js";
+import { Envio, Nifi } from "../Client/BullClient.js";
 import { request } from "undici";
 import 'dotenv/config';
 
@@ -14,7 +14,6 @@ async function QueueProcess(Job){
         client,
         data
     };
-
     try {
         const { statusCode } = await request("http://localhost:7878/nifi",{
 
@@ -44,14 +43,39 @@ async function QueueProcess(Job){
     }
 }
 
-const worker = new Worker("Envio", QueueProcess,{
+async function Clear(){
+    
+    const limite = 14 * 24 * 60 * 60 * 1000;
+    const Estados = ['completed', 'failed', 'active'];
+
+    for (const status of Estados){
+        await Envio.clean(limite, 1000, status);
+        console.log(`[Limpeza agendada] Apagado [${status}]`)
+    }
+
+    return
+}
+
+const worker = new Worker("Envio", async (job) => {
+
+    console.log(`[WORKER] Job recebido: ${job.name}`);
+
+    switch (job.name) {
+        case "Envio/Principal":
+        return await QueueProcess(job);
+    case "Limpeza":
+        return await Clear(job);
+    default:
+        throw new Error(`Job desconhecido: ${job.name}`);
+    }
+}, {
     concurrency: 50,
     connection: RedisClient,
     removeOnComplete: false,
     removeOnFail: false,
     settings: {
-        backoffStrategies:{
-            exponential : () => 2000,
+        backoffStrategies: {
+        exponential: () => 2000,
         },
     },
 });

@@ -1,6 +1,5 @@
 import { Envio, Nifi } from "../Client/BullClient.js";
-import crypto from 'crypto';
-
+import RedisClient from "../Client/QueueClient.js";
 
 export async function AddEvent(req, res, next){
     
@@ -17,17 +16,19 @@ export async function AddEvent(req, res, next){
 
     const { evento, data } = req.body;
     const { client } = req; 
-    const id = crypto.randomUUID();
-
     try{
+
+        const CountID = await RedisClient.incr("evento_contador");
+        const id = `Evento-${CountID}`
+
         await Envio.add('Envio/Principal',
-    { evento, client: client?.nome , data },
-    {
-        jobId: id,
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 }
-    }
-);
+        { evento, client: client?.nome , data },
+        {
+            jobId: id,
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 2000 }
+        }
+        );
 
         return res.sendStatus(202);
     }
@@ -39,9 +40,13 @@ export async function AddEvent(req, res, next){
 }
 
 export async function FailedEvent(req, res) {
-    const queueId = String(req.params.Queue);
-    if (isNaN(queueId)) {
-        return res.status(400).json({ error: 'Queue ID inválido.' });
+    const queueId =  req.params.Queue;
+
+    console.log('Queue recebido:', req.params.Queue);
+
+
+    if (!queueId || typeof queueId !== 'string' || !queueId.startsWith('Evento-')) {
+        return res.status(400).json({ error: 'Job ID inválido. Esperado formato "evento-<número>".' });
     }
 
     try {
@@ -63,8 +68,9 @@ export async function FailedEvent(req, res) {
 
         const retryJob = await Nifi.add(
             'Erro/Externo(NIFI)',
-            { QueueJob: queueId, evento, client, motivo, data, error },
+            { evento, client, motivo, data, error },
             {
+                jobId: queueId,
                 attempts: 3,
                 backoff: {
                 type: 'exponential',
