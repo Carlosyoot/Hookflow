@@ -1,6 +1,7 @@
 import NodeCache from 'node-cache';
 import pool from '../Client/OracleCliente.js';
 import { encrypt } from '../security/Encoder.js';
+import logger from '../../Logger/Logger.js';
 
 const staticCache = new NodeCache({ stdTTL: 0, checkperiod: 0 }); 
 
@@ -13,7 +14,7 @@ export async function preloadClientSecrets() {
         staticCache.set(enc, { nome });
     }
 
-    console.log(`[CACHE] ${result.rows.length} secrets carregadas no cache.`);
+    logger.trace(`[SERVER] ${result.rows.length} secrets carregadas no cache.`);
 }
 
 export function getClientByToken(token) {

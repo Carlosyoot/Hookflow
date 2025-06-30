@@ -2,6 +2,7 @@ import { encrypt, generateSecretWithSalt } from '../security/Encoder.js';
 import pool from '../Client/OracleCliente.js';
 import { getCache, setCache, invalidateCache } from "../utils/DynamicCache.js";
 import { removeClientFromSecretCache, addClientToSecretCache } from '../utils/SecretsCache.js';
+import logger from '../../Logger/Logger.js';
 
 
 
@@ -47,7 +48,7 @@ export async function AddClientMiddleware(req,res,next){
         return res.status(201).json({ success: true, token: secret });
 
     } catch (err) {
-        console.error('[ORACLE ERROR]', err);
+        logger.error("[CODE] Erro interno ao registrar cliente: ", err);
         return res.status(500).json({ error: 'Erro interno ao registrar cliente' });
     }
 }
@@ -71,7 +72,7 @@ export async function GetAllClientsMiddleware(req, res) {
 
         return res.status(200).json(formatted);
     } catch (err) {
-        console.error('[GET ALL CLIENTES ERROR]', err);
+        logger.error("[CODE] Erro ao obter clientes: ", err);
         return res.status(500).json({ error: 'Erro ao obter clientes' });
     }
 }
@@ -102,7 +103,8 @@ export async function GetClientByCNPJMiddleware(req, res) {
 
         return res.status(200).json(response);
     } catch (err) {
-        console.error('[GET CLIENTE ERROR]', err);
+        console.error(err);
+        logger.error("[CODE] Erro ao buscar cliente: ", err)
         return res.status(500).json({ error: 'Erro ao buscar cliente' });
     }
 }
@@ -139,7 +141,8 @@ export async function DeleteClientMiddleware(req, res) {
 
         return res.status(200).json({ success: true, cnpj });
     } catch (err) {
-        console.error('[DELETE CLIENTE ERROR]', err);
+        console.error(err);
+        logger.error("[CODE] Erro ao excluir cliente: ", err)
         return res.status(500).json({ error: 'Erro ao excluir cliente' });
     }
 }

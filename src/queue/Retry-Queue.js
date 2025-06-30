@@ -1,36 +1,51 @@
 import { Worker } from "bullmq";
 import RedisClient from "../Client/QueueClient.js";
+import { Nifi } from "../Client/BullClient.js";
+import logger from "../../Logger/Logger.js";
 
 
-
-async function Clear(queue) {
-    const limite = 0; 
+async function Clear(){
+    const limite = 14 * 24 * 60 * 60 * 1000;
     const Estados = ['completed', 'failed', 'active'];
-    const resumo = [];
 
-    for (const status of Estados) {
-        const removidos = await queue.clean(limite, 1000, status);
-        const msg = `[Limpeza agendada] Apagado ${removidos} jobs com status: ${status}`;
-        console.log(msg);
-        resumo.push(msg);
+    for (const status of Estados){
+        await Envio.clean(limite, 1000, status);
     }
 
-    return resumo.join('\n');
+    return
+}
+
+async function RetryQueues(job) {
+    
+    const { evento, client, status, error, motivo} = job.data;
+
+    if ( status === 'ok') {
+        return "Processado com sucesso";
+    }
+
+    else {
+        throw new Error(`Job ${job.id} inválido ou malformado: sem status ou error.`);
+    }
 }
 
 const worker = new Worker("Nifi", async (job) => {
-    const { evento, data, client, status, error, motivo } = job.data;
 
-    if (status === 'ok') {
-        console.log(`[NIFI:SUCESSO] Evento ${evento} do cliente ${client} foi processado com sucesso.`);
-        return 'Processado com sucesso.';
+    switch (job.name) {
+        case "Limpeza":
+            return await Clear(Nifi);
+
+        case "Sucesso/Externo(NIFI)":
+            return await RetryQueues(job);
+
+        case "Erro/Externo(NIFI)":
+
+            throw new Error(`[NIFI] Job encerrado como falha para fins de auditoria.`);
+
+        default:
+                logger.info("NOME DO JOB", job.name);
+
+            throw new Error(`Job desconhecido: ${job.name}`);
     }
-
-    if (error) {
-        console.warn(`[NIFI:ERRO] Evento ${evento} do cliente ${client} falhou com erro: ${error} | Motivo: ${motivo ?? 'não informado'}`);
-    }
-
-    throw new Error(`Job ${job.id} inválido ou malformado: sem status ou error.`);
 }, {
     concurrency: 50,
     connection: RedisClient,
@@ -48,14 +63,11 @@ const worker = new Worker("Nifi", async (job) => {
     }
 });
 
-worker.on('completed', (job, result) => {
-    console.log(`[NIFI-WORKER] Job ${job.id} concluído: ${result}`);
-});
 
 worker.on('failed', (job, err) => {
-    console.error(`[NIFI-WORKER] Job ${job.id} falhou. Erro: ${err.message}`);
+    logger.error(`[WORKER/RETRY] Evento ${job.id} falhou - Erro: ${err.message}`);
 });
 
 worker.on('ready', () => {
-    console.log(`[NIFI-WORKER] Pronto para processar jobs na fila Nifi`);
+    logger.trace(`[WORKER/RETRY] Worker de reprocessamento iniciado`);
 });

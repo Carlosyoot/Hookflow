@@ -3,6 +3,7 @@ import RedisClient from "../Client/QueueClient.js";
 import { Envio, Nifi } from "../Client/BullClient.js";
 import { request } from "undici";
 import 'dotenv/config';
+import logger from "../../Logger/Logger.js";
 
 
 async function QueueProcess(Job){
@@ -38,7 +39,7 @@ async function QueueProcess(Job){
     }
     catch(error){
         const mensagemErro = error?.message || error?.cause?.message || JSON.stringify(error);
-        console.error(`[WORKER] Falha ao enviar evento: ${mensagemErro}`);
+        logger.error(`[WORKER/ENVIO] Falha ao enviar evento: ${mensagemErro}`);
         throw new Error(mensagemErro);
     }
 }
@@ -47,19 +48,13 @@ async function Clear(){
     
     const limite = 14 * 24 * 60 * 60 * 1000;
     const Estados = ['completed', 'failed', 'active'];
-
     for (const status of Estados){
         await Envio.clean(limite, 1000, status);
-        console.log(`[Limpeza agendada] Apagado [${status}]`)
     }
-
-    return
+    return `Eventos com mais de 14 dias limpos`
 }
 
 const worker = new Worker("Envio", async (job) => {
-
-    console.log(`[WORKER] Job recebido: ${job.name}`);
-
     switch (job.name) {
         case "Envio/Principal":
         return await QueueProcess(job);
@@ -80,14 +75,10 @@ const worker = new Worker("Envio", async (job) => {
     },
 });
 
-worker.on('completed', (job, result) => {
-    console.log(`[WORKER ${process.pid}] Job ${job.id} concluído. Resultado: ${result}`);
-});
-
 worker.on('failed', async (job, err) => {
-    console.error(`[WORKER ${process.pid}] Job ${job.id} falhou. Erro: ${err.message}`);
+    logger.error(`[WORKER/ENVIO] Evento ${job.id} falhou - Erro: ${err.message}`);
 });
 
 worker.on('ready', () => {
-    console.log(`[WORKER ${process.pid}] Pronto para processar jobs (BullMQ).`);
+    logger.trace(`[WORKER/ENVIO] Worker de envio iniciado`);
 });
