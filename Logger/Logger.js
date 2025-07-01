@@ -16,7 +16,7 @@ const transport = pino.transport({
       target: 'pino-pretty',
       options: {
         colorize: true,
-        translateTime: 'SYS:dd/MM/yyyy HH:mm:ss',
+        translateTime: 'SYS:dd/mm/yyyy HH:MM:ss',
         ignore: 'pid,hostname',
         levelFirst: true,
         singleLine: false
@@ -28,7 +28,7 @@ const transport = pino.transport({
       options: {
         destination: completeLogFile,
         colorize: false,
-        translateTime: 'SYS:dd/MM/yyyy HH:mm:ss',
+        translateTime: 'SYS:dd/mm/yyyy HH:MM:ss',
         ignore: 'pid,hostname',
         levelFirst: true,
         singleLine: false

@@ -9,7 +9,7 @@ async function Clear(){
     const Estados = ['completed', 'failed', 'active'];
 
     for (const status of Estados){
-        await Envio.clean(limite, 1000, status);
+        await Nifi.clean(limite, 1000, status);
     }
 
     return
