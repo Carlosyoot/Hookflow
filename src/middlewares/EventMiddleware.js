@@ -45,7 +45,7 @@ export async function FailedEvent(req, res) {
     const queueId =  req.params.Queue;
 
     if (!queueId || typeof queueId !== 'string' || !queueId.startsWith('ID-')) {
-        return res.status(400).json({ error: 'Job ID inválido. Esperado formato "evento-<número>".' });
+        return res.status(400).json({ error: 'Job ID inválido. Esperado formato "ID-<número>".' });
     }
 
     try {
@@ -55,8 +55,8 @@ export async function FailedEvent(req, res) {
             return res.status(404).json({ error: `Job com ID ${queueId} não encontrado.` });
         }
 
-        const { evento, client, data, motivo } = job.data;
-        const error =  req.body.error;
+        const { evento, client, data } = job.data;
+        const { error, nifierror } =  req.body;
 
         const SuccededJob = await Nifi.getJob(String(queueId));
         if (SuccededJob){
@@ -66,7 +66,7 @@ export async function FailedEvent(req, res) {
 
         const retryJob = await Nifi.add(
             'Erro/Externo(NIFI)',
-            { evento, client, motivo, data, error },
+            { evento, client, data, error, nifierror },
             {
                 jobId: queueId,
                 attempts: 1,

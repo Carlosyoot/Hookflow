@@ -9,6 +9,7 @@ import ManagerRoutes from './src/routes/ManagerRoutes.js';
 import { preloadClientSecrets } from './src/utils/SecretsCache.js';
 import { ClearQueues } from './src/utils/Scheduling.js';
 import logger from './Logger/Logger.js';
+import httpLogger from './Logger/MorganLogger.js';
 
 const app = express();
 const port = process.env.PORT;
@@ -17,12 +18,16 @@ app.use(helmet());
 app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 
-/*
+
 app.use(
-  morgan('dev', {
-    skip: (req) => req.originalUrl.startsWith('/bull')
+  morgan('short', {
+    skip: (req) => req.originalUrl.startsWith('/bull'),
+    stream: {
+      write: (msg) => httpLogger.info(msg.trim())
+    }
   })
-);*/
+);
+
 
 app.use(ClientRoutes);
 app.use('/admin', ManagerRoutes);

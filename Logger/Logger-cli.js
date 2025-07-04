@@ -5,9 +5,16 @@ import readline from 'readline';
 import chalk from 'chalk';
 import stripAnsi from 'strip-ansi';
 import MuteStream from 'mute-stream';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-const logFile = path.join(os.homedir(), 'Documents', 'webhook-redis', 'Webhook.log');
-const exportFile = path.join(os.homedir(), 'Documents', 'webhook-redis', 'Webhook_filtered.log');
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const logFile = path.resolve(__dirname, '../../Logs/Webhook.log');
+const exportFile = path.resolve(__dirname, '../../Logs/Webhook_filtered.log');
 
 let cursor = 0;
 let filterTag = null;

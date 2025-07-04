@@ -5,7 +5,7 @@ export const Envio = new Queue('Envio', {
     connection: RedisClient,
     defaultJobOptions: {
     removeOnComplete: false,
-    removeOnFail: true,
+    removeOnFail: false,
     },
 });
 

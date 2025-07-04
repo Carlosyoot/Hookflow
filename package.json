@@ -1,11 +1,13 @@
 {
-  "name": "rebuild-webhook-redis",
+  "name": "webhook-redis",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "Redis.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "monitor": "node ./node_modules/bee-ui/dist/cli.js start --queue redis://localhost:6379"
+    "start": "pm2 start ./ecosystem.config.js",
+    "stop": "pm2 stop ./ecosystem.config.js",
+    "delete": "pm2 delete ./ecosystem.config.js",
+    "logs": "pm2 logs"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +16,7 @@
   "dependencies": {
     "@bull-board/api": "^6.10.1",
     "@bull-board/express": "^6.10.1",
+    "autocannon": "^8.0.0",
     "bullmq": "^5.56.0",
     "compression": "^1.8.0",
     "crypto": "^1.0.1",

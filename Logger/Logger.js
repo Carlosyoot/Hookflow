@@ -1,15 +1,17 @@
 import pino from 'pino';
-import os from 'os';
 import path from 'path';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-// Define caminho do log
-const logPath = path.join(os.homedir(), 'Documents', 'webhook-redis');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const logPath = path.resolve(__dirname, '../../Logs');
 if (!fs.existsSync(logPath)) fs.mkdirSync(logPath, { recursive: true });
 
 const completeLogFile = path.join(logPath, 'Webhook.log');
 
-// Transportes combinados: terminal e arquivo (ambos com pino-pretty)
 const transport = pino.transport({
   targets: [
     {
