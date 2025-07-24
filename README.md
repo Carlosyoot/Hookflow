@@ -129,4 +129,4 @@ Este projeto é uma implementação real de uma infraestrutura de integração r
 
 ## Autor
 
-Desenvolvido por **Carlos**, apaixonado por programação. Atualmente estuda Java e JavaScript com foco em frameworks como React, e pretendo evoluir para desenvolvimento com **Golang**.
+Desenvolvido por **Carlos**, apaixonado por programação. Atualmente estudando Java e JavaScript com foco em frameworks como React, e pretendendo evoluir para desenvolvimento com **Golang**.
