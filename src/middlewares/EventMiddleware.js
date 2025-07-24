@@ -23,7 +23,11 @@ export async function AddEvent(req, res, next){
         const id = `ID-${CountID}`
 
         await Envio.add('Envio/Principal',
-        { evento, client: client?.nome , data },
+        {
+            evento,
+            client, 
+            data
+        },
         {
             jobId: id,
             attempts: 3,
@@ -31,7 +35,7 @@ export async function AddEvent(req, res, next){
         }
         );
 
-        logger.info(`[WEBHOOK] Novo evento recebido de ${client?.nome}`)
+        logger.info(`[WEBHOOK] Novo evento recebido de ${client}`);
         return res.sendStatus(202);
     }
     catch (err) {

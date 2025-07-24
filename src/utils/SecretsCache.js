@@ -3,29 +3,37 @@ import pool from '../Client/OracleCliente.js';
 import { encrypt } from '../security/Encoder.js';
 import logger from '../../Logger/Logger.js';
 
-const staticCache = new NodeCache({ stdTTL: 0, checkperiod: 0 }); 
+const staticCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 
 export async function preloadClientSecrets() {
-    const conn = await pool.getConnection();
-    const result = await conn.execute(`SELECT nome, SECRET_ENC FROM CLIENTES_API`);
-    await conn.close();
+    try {
+        const conn = await pool.getConnection();
+        const result = await conn.execute(`
+            SELECT CLIENT, SECRET_ENC 
+            FROM U_WEBHOOK_CLIENTS 
+            WHERE ACTIVE = 'Y'
+        `);
+        await conn.close();
 
-    for (const [nome, enc] of result.rows) {
-        staticCache.set(enc, { nome });
+        for (const [clientName, secretEnc] of result.rows) {
+            staticCache.set(secretEnc, clientName);
+        }
+
+        logger.trace(`[SERVER] ${result.rows.length} secrets carregadas no cache.`);
+    } catch (error) {
+        logger.error(`[SERVER] Erro ao carregar secrets: ${error.message}`);
     }
-
-    logger.trace(`[SERVER] ${result.rows.length} secrets carregadas no cache.`);
 }
 
 export function getClientByToken(token) {
-    const enc = encrypt(token);
-    return staticCache.get(enc) ?? null;
+    const secretEnc = encrypt(token);
+    return staticCache.get(secretEnc) ?? null;
 }
 
-export function addClientToSecretCache(secret_enc, nome) {
-    staticCache.set(secret_enc, { nome });
+export function addClientToSecretCache(secretEnc, clientName) {
+    staticCache.set(secretEnc, clientName);
 }
 
-export function removeClientFromSecretCache(secret_enc) {
-    staticCache.del(secret_enc);
+export function removeClientFromSecretCache(secretEnc) {
+    staticCache.del(secretEnc);
 }

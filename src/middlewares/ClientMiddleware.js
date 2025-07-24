@@ -16,9 +16,9 @@ export async function AddClientMiddleware(req, res) {
 
     const cnpj = req.body.cnpj.trim();
     const nome = req.body.nome.trim();
-    const token = req.body.token?.trim();
+    const token = req.body.voors?.trim();
     const authorization = req.body.authorization?.trim();
-    const lwclient = req.body.client?.trim();
+    const lwclient = req.body.lwclient?.trim();
 
     const secret = generateSecretWithSalt();
     const secret_enc = encrypt(secret);
@@ -36,25 +36,23 @@ export async function AddClientMiddleware(req, res) {
         }
 
         await conn.execute(
-            `INSERT INTO U_WEBHOOK_CLIENTS (CNPJ, EMPRESA, SECRET_ENC)
+            `INSERT INTO U_WEBHOOK_CLIENTS (CNPJ, CLIENT, SECRET_ENC)
             VALUES (:cnpj, :nome, :secret_enc)`,
             { cnpj, nome, secret_enc },
             { autoCommit: false } 
         );
 
-        if (token || authorization || lwclient) {
-            await conn.execute(
-                `INSERT INTO U_HOK_CONFIG (CNPJ, TOKEN, AUTHORIZATION, LW_CLIENT)
-                VALUES (:cnpj, :token, :authorization, :lwclient)`,
-                {
-                    cnpj,
-                    token: token || null,
-                    authorization: authorization || null,
-                    lwclient: lwclient || null
-                },
-                { autoCommit: false }
-            );
-        }
+        await conn.execute(
+            `INSERT INTO U_HOK_CONFIG (CNPJ, TOKEN, AUTHORIZATION, LW_CLIENT)
+            VALUES (:cnpj, :token, :authorization, :lwclient)`,
+            {
+                cnpj,
+                token: token || null,
+                authorization: authorization || null,
+                lwclient: lwclient || null
+            },
+            { autoCommit: false }
+        );
 
         await conn.commit();
 
@@ -87,9 +85,9 @@ export async function GetAllClientsMiddleware(req, res) {
 
         await conn.close();
 
-        const formatted = result.rows.map(([cnpj, nome, active]) => ({
+        const formatted = result.rows.map(([cnpj, client, active]) => ({
             cnpj,
-            nome,
+            client,
             active: active === 'Y'
         }));
         setCache(cacheKey, formatted);
@@ -113,7 +111,7 @@ export async function GetClientByCNPJMiddleware(req, res) {
         const conn = await pool.getConnection();
 
         const result = await conn.execute(
-            `SELECT CNPJ, NOME FROM U_WEBHOOK_CLIENTS WHERE CNPJ = :cnpj`, [cnpj]);
+            `SELECT CNPJ, CLIENT FROM U_WEBHOOK_CLIENTS WHERE CNPJ = :cnpj`, [cnpj]);
 
         await conn.close();
 
@@ -121,8 +119,8 @@ export async function GetClientByCNPJMiddleware(req, res) {
             return res.status(404).json({ error: 'Cliente não encontrado' });
         }
 
-        const [CNPJ, NOME] = result.rows[0];
-        const response = { cnpj: CNPJ, nome: NOME };
+        const [CNPJ, CLIENT] = result.rows[0];
+        const response = { cnpj: CNPJ, nome: CLIENT };
         setCache(cacheKey, response);
 
         return res.status(200).json(response);
@@ -173,21 +171,31 @@ export async function DeleteClientMiddleware(req, res) {
 
 export async function UpdateClientStatusMiddleware(req, res) {
     const { cnpj } = req.params;
-    const { status } = req.query;
+    const activeParam = req.query.active;
 
     if (!cnpj) {
         return res.status(400).json({ error: 'CNPJ não informado' });
     }
 
-    if (!status || !['Y', 'N'].includes(status)) {
-        return res.status(400).json({ error: 'Status inválido. Use "Y" para ativar ou "N" para desativar.' });
+    if (activeParam === undefined) {
+        return res.status(400).json({ error: 'Parâmetro "active" não informado' });
     }
+
+    const lowered = String(activeParam).trim().toLowerCase();
+    const validValues = ['true', 'false'];
+
+    if (!validValues.includes(lowered)) {
+        return res.status(400).json({ error: 'Status inválido. Use "true" ou "false".' });
+    }
+
+    const status = (lowered === 'true') ? 'Y' : 'N';
 
     try {
         const conn = await pool.getConnection();
 
         const resultGet = await conn.execute(
-            `SELECT SECRET_ENC FROM U_WEBHOOK_CLIENTS WHERE CNPJ = :cnpj`, [cnpj]
+            `SELECT 1 FROM U_WEBHOOK_CLIENTS WHERE CNPJ = :cnpj`,
+            [cnpj]
         );
 
         if (resultGet.rows.length === 0) {
@@ -197,9 +205,21 @@ export async function UpdateClientStatusMiddleware(req, res) {
 
         await conn.execute(
             `UPDATE U_WEBHOOK_CLIENTS SET ACTIVE = :status WHERE CNPJ = :cnpj`,
-            [status, cnpj],
+            { status, cnpj },
             { autoCommit: true }
         );
+
+        if (status === 'N') {
+            const resultSecret = await conn.execute(
+                `SELECT SECRET_ENC FROM U_WEBHOOK_CLIENTS WHERE CNPJ = :cnpj`,
+                [cnpj]
+            );
+        
+            if (resultSecret.rows.length > 0) {
+                const [secret_enc] = resultSecret.rows[0];
+                removeClientFromSecretCache(secret_enc);
+            }
+        }
 
         await conn.close();
 
@@ -207,7 +227,7 @@ export async function UpdateClientStatusMiddleware(req, res) {
             success: true,
             message: `Cliente ${status === 'Y' ? 'ativado' : 'desativado'} com sucesso`,
             cnpj,
-            status
+            active: status === 'Y'
         });
     } catch (err) {
         console.error(err);
@@ -215,5 +235,3 @@ export async function UpdateClientStatusMiddleware(req, res) {
         return res.status(500).json({ error: 'Erro ao atualizar status do cliente' });
     }
 }
-
-    
