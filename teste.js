@@ -8,7 +8,7 @@ const INSTANCE = autocannon({
     pipelining: 10,
     headers: {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer 4196d52e9ee8f0704f1e26f0699a86e4'
+    'Authorization': 'Bearer --------------------------'
     },
     body: JSON.stringify({
     evento: 'BENCHMARK_EVENT',
