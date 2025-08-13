@@ -1,4 +1,5 @@
 import { Redis, type RedisOptions } from 'ioredis';
+import process from "node:process";
 
 const options: RedisOptions = {
   host: '127.0.0.1',

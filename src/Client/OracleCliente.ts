@@ -1,5 +1,6 @@
 import oracledb from 'oracledb';
 import 'dotenv/config';
+import process from "node:process";
 
 oracledb.initOracleClient();
 
