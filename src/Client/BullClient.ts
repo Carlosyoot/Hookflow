@@ -1,5 +1,5 @@
 import { Queue, type JobsOptions } from 'bullmq';
-import RedisClient from './QueueClient.ts';
+import RedisClient from './QueueClient.js';
 
 const defaultJobOptions: JobsOptions = {
   removeOnComplete: false,

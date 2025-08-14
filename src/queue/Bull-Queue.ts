@@ -1,6 +1,6 @@
 import { Worker, type Job } from 'bullmq';
-import RedisClient from '../Client/QueueClient.ts';
-import { Envio, Nifi } from '../Client/BullClient.ts';
+import RedisClient from '../Client/QueueClient.js';
+import { Envio, Nifi } from '../Client/BullClient.js';
 import { request } from 'undici';
 import 'dotenv/config';
 import logger from '../../Logger/Logger.js';

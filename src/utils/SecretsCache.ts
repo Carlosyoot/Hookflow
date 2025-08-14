@@ -1,6 +1,6 @@
 import NodeCache from 'node-cache';
-import pool from '../Client/OracleClient.ts';
-import { encrypt } from '../security/Encoder.ts';
+import pool from '../Client/OracleClient.js';
+import { encrypt } from '../security/Encoder.js';
 import logger from '../../Logger/Logger.js';
 
 const staticCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });

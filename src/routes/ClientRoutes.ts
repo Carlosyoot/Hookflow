@@ -1,6 +1,6 @@
 import { Router, type RequestHandler } from 'express';
 import { Client } from '../security/UserRoles.js';
-import { AddEvent } from '../middlewares/EventMiddleware.ts';
+import { AddEvent } from '../middlewares/EventMiddleware.js';
 
 const router = Router();
 

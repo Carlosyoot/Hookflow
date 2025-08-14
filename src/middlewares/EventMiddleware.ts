@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
-import { Envio, Nifi } from '../Client/BullClient.ts';
-import RedisClient from '../Client/QueueClient.ts';
+import { Envio, Nifi } from '../Client/BullClient.js';
+import RedisClient from '../Client/QueueClient.js';
 import logger from '../../Logger/Logger.js';
 
 export async function AddEvent(req: Request, res: Response, _next: NextFunction) {

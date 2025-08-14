@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { FailedEvent } from '../middlewares/EventMiddleware.ts';
+import { FailedEvent } from '../middlewares/EventMiddleware.js';
 
 const router = Router();
 

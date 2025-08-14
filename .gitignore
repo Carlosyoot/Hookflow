@@ -1,1 +1,7 @@
 node_modules/
+dist/
+*.tsbuildinfo
+.env
+npm-debug.log*
+pids
+*.log

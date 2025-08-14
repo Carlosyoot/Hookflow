@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { encrypt } from './Encoder.js';
-import pool from '../Client/OracleClient.ts';
+import pool from '../Client/OracleClient.js';
 import { getClientByToken, addClientToSecretCache } from '../utils/SecretsCache.js';
 import console from 'node:console';
 

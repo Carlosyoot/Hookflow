@@ -4,12 +4,12 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 
-import Utils from './src/routes/UtilsRoutes.ts';
-import WebhookRoutes from './src/routes/ClientRoutes.ts';
-import ManagerRoutes from './src/routes/ManagerRoutes.ts';
+import Utils from './src/routes/UtilsRoutes.js';
+import WebhookRoutes from './src/routes/ClientRoutes.js';
+import ManagerRoutes from './src/routes/ManagerRoutes.js';
 
-import { preloadClientSecrets } from './src/utils/SecretsCache.ts';
-import { ClearQueues } from './src/utils/Scheduling.ts';
+import { preloadClientSecrets } from './src/utils/SecretsCache.js';
+import { ClearQueues } from './src/utils/Scheduling.js';
 
 import logger from './Logger/Logger.js';
 import httpLogger from './Logger/MorganLogger.js';

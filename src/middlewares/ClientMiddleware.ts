@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express';
 import { encrypt, generateSecretWithSalt } from '../security/Encoder.js';
-import pool from '../Client/OracleClient.ts';
+import pool from '../Client/OracleClient.js';
 import { getCache, setCache, invalidateCache } from '../utils/DynamicCache.js';
-import { removeClientFromSecretCache, addClientToSecretCache } from '../utils/SecretsCache.js';
+import { removeClientFromSecretCache, addClientToSecretCache } from "../utils/SecretsCache.js";
 import logger from '../../Logger/Logger.js';
 
 export async function AddClientMiddleware(req: Request, res: Response) {

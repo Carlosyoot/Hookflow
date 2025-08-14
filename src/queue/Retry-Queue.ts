@@ -1,6 +1,6 @@
 import { Worker, type Job } from 'bullmq';
-import RedisClient from '../Client/QueueClient.ts';
-import { Nifi } from '../Client/BullClient.ts';
+import RedisClient from '../Client/QueueClient.js';
+import { Nifi } from '../Client/BullClient.js';
 import logger from '../../Logger/Logger.js';
 
 type JobName = 'Limpeza' | 'Sucesso/Externo(NIFI)' | 'Erro/Externo(NIFI)';

@@ -1,12 +1,12 @@
 import { Router, type RequestHandler } from 'express';
-import { Manager } from '../security/UserRoles.ts';
+import { Manager } from '../security/UserRoles.js';
 import {
   AddClientMiddleware,
   GetAllClientsMiddleware,
   GetClientByCNPJMiddleware,
   DeleteClientMiddleware,
   UpdateClientStatusMiddleware
-} from '../middlewares/ClientMiddleware.ts';
+} from '../middlewares/ClientMiddleware.js';
 
 const router = Router();
 

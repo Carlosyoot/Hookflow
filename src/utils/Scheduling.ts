@@ -1,5 +1,5 @@
-import { Envio, Nifi } from '../Client/BullClient.ts';
-import RedisClient from '../Client/QueueClient.ts';
+import { Envio, Nifi } from '../Client/BullClient.js';
+import RedisClient from '../Client/QueueClient.js';
 import logger from '../../Logger/Logger.js';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;

@@ -6,7 +6,7 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter.js';
 import { createBullBoard } from '@bull-board/api';
 import { ExpressAdapter } from '@bull-board/express';
 
-import RedisClient from './src/Client/QueueClient.ts';
+import RedisClient from './src/Client/QueueClient.js';
 import logger from './Logger/Logger.js';
 
 const app = express();
