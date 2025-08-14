@@ -1,0 +1,236 @@
+import type { Request, Response } from 'express';
+import { encrypt, generateSecretWithSalt } from '../security/Encoder.js';
+import pool from '../Client/OracleClient.ts';
+import { getCache, setCache, invalidateCache } from '../utils/DynamicCache.js';
+import { removeClientFromSecretCache, addClientToSecretCache } from '../utils/SecretsCache.js';
+import logger from '../../Logger/Logger.js';
+
+export async function AddClientMiddleware(req: Request, res: Response) {
+  const requiredFields = ['cnpj', 'nome'] as const;
+  const missing = requiredFields.filter((field) => !(req.body as any)?.[field]);
+
+  if (missing.length > 0) {
+    return res.status(400).json({ error: `Campos obrigatórios ausentes: ${missing.join(', ')}` });
+  }
+
+  const cnpj = String((req.body as any).cnpj).trim();
+  const nome = String((req.body as any).nome).trim();
+  const token = (req.body as any).voors?.trim?.();
+  const authorization = (req.body as any).authorization?.trim?.();
+  const lwclient = (req.body as any).lwclient?.trim?.();
+
+  const secret = generateSecretWithSalt();
+  const secret_enc = encrypt(secret);
+
+  let conn: any;
+  try {
+    conn = await pool.getConnection();
+
+    const result = await conn.execute(
+      `SELECT 1 FROM U_WEBHOOK_CLIENTS WHERE CNPJ = :cnpj`,
+      [cnpj]
+    );
+
+    if (result.rows?.length > 0) {
+      return res.status(409).json({ error: 'Cliente já existente' });
+    }
+
+    await conn.execute(
+      `INSERT INTO U_WEBHOOK_CLIENTS (CNPJ, CLIENT, SECRET_ENC)
+       VALUES (:cnpj, :nome, :secret_enc)`,
+      { cnpj, nome, secret_enc },
+      { autoCommit: false }
+    );
+
+    await conn.execute(
+      `INSERT INTO U_HOK_CONFIG (CNPJ, TOKEN, AUTHORIZATION, LW_CLIENT)
+       VALUES (:cnpj, :token, :authorization, :lwclient)`,
+      {
+        cnpj,
+        token: token || null,
+        authorization: authorization || null,
+        lwclient: lwclient || null
+      },
+      { autoCommit: false }
+    );
+
+    await conn.commit();
+
+    addClientToSecretCache(secret_enc, nome);
+    invalidateCache('CLIENTES:ALL');
+    invalidateCache(`CLIENTES:${cnpj}`);
+
+    return res.status(201).json({ success: true, token: secret });
+  } catch (err) {
+    logger.error('[CODE] Erro ao registrar cliente: ', err);
+    return res.status(500).json({ error: 'Erro interno ao registrar cliente' });
+  } finally {
+    try { await conn?.close(); } catch {}
+  }
+}
+
+export async function GetAllClientsMiddleware(req: Request, res: Response) {
+  const cacheKey = 'CLIENTES:ALL';
+  const cached = getCache(cacheKey);
+  if (cached) return res.status(200).json(cached);
+
+  let conn: any;
+  try {
+    conn = await pool.getConnection();
+
+    const result = await conn.execute(
+      `SELECT CNPJ, CLIENT, ACTIVE FROM U_WEBHOOK_CLIENTS ORDER BY CLIENT`
+    );
+
+    const formatted = (result.rows || []).map(
+      ([cnpj, client, active]: [string, string, string]) => ({
+        cnpj,
+        client,
+        active: active === 'Y'
+      })
+    );
+
+    setCache(cacheKey, formatted);
+    return res.status(200).json(formatted);
+  } catch (err) {
+    logger.error('[CODE] Erro ao obter clientes: ', err);
+    return res.status(500).json({ error: 'Erro ao obter clientes' });
+  } finally {
+    try { await conn?.close(); } catch {}
+  }
+}
+
+export async function GetClientByCNPJMiddleware(req: Request, res: Response) {
+  const { cnpj } = req.params;
+  if (!cnpj) return res.status(400).json({ error: 'CNPJ não informado' });
+
+  const cacheKey = `CLIENTES:${cnpj}`;
+  const cached = getCache(cacheKey);
+  if (cached) return res.status(200).json(cached);
+
+  let conn: any;
+  try {
+    conn = await pool.getConnection();
+
+    const result = await conn.execute(
+      `SELECT CNPJ, CLIENT FROM U_WEBHOOK_CLIENTS WHERE CNPJ = :cnpj`,
+      [cnpj]
+    );
+
+    if (!result.rows?.length) {
+      return res.status(404).json({ error: 'Cliente não encontrado' });
+    }
+
+    const [CNPJ, CLIENT] = result.rows[0] as [string, string];
+    const response = { cnpj: CNPJ, nome: CLIENT };
+    setCache(cacheKey, response);
+
+    return res.status(200).json(response);
+  } catch (err) {
+    logger.error('[CODE] Erro ao buscar cliente: ', err);
+    return res.status(500).json({ error: 'Erro ao buscar cliente' });
+  } finally {
+    try { await conn?.close(); } catch {}
+  }
+}
+
+export async function DeleteClientMiddleware(req: Request, res: Response) {
+  const { cnpj } = req.params;
+  if (!cnpj) {
+    return res.status(400).json({ error: 'CNPJ não informado' });
+  }
+
+  let conn: any;
+  try {
+    conn = await pool.getConnection();
+
+    const resultGet = await conn.execute(
+      `SELECT SECRET_ENC FROM U_WEBHOOK_CLIENTS WHERE CNPJ = :cnpj`,
+      [cnpj]
+    );
+
+    if (!resultGet.rows?.length) {
+      return res.status(404).json({ error: 'Cliente não encontrado para exclusão' });
+    }
+
+    const [secret_enc] = resultGet.rows[0] as [string];
+
+    await conn.execute(
+      `DELETE FROM U_WEBHOOK_CLIENTS WHERE CNPJ = :cnpj`,
+      [cnpj],
+      { autoCommit: true }
+    );
+
+    invalidateCache('CLIENTES:ALL');
+    invalidateCache(`CLIENTES:${cnpj}`);
+    removeClientFromSecretCache(secret_enc);
+
+    return res.status(200).json({ success: true, cnpj });
+  } catch (err) {
+    logger.error('[CODE] Erro ao excluir cliente: ', err);
+    return res.status(500).json({ error: 'Erro ao excluir cliente' });
+  } finally {
+    try { await conn?.close(); } catch {}
+  }
+}
+
+export async function UpdateClientStatusMiddleware(req: Request, res: Response) {
+  const { cnpj } = req.params;
+  const activeParam = (req.query as any).active;
+
+  if (!cnpj) return res.status(400).json({ error: 'CNPJ não informado' });
+  if (activeParam === undefined) {
+    return res.status(400).json({ error: 'Parâmetro "active" não informado' });
+  }
+
+  const lowered = String(activeParam).trim().toLowerCase();
+  const validValues = ['true', 'false'];
+  if (!validValues.includes(lowered)) {
+    return res.status(400).json({ error: 'Status inválido. Use "true" ou "false".' });
+  }
+
+  const status = lowered === 'true' ? 'Y' : 'N';
+
+  let conn: any;
+  try {
+    conn = await pool.getConnection();
+
+    const resultGet = await conn.execute(
+      `SELECT 1 FROM U_WEBHOOK_CLIENTS WHERE CNPJ = :cnpj`,
+      [cnpj]
+    );
+
+    if (!resultGet.rows?.length) {
+      return res.status(404).json({ error: 'Cliente não encontrado' });
+    }
+
+    await conn.execute(
+      `UPDATE U_WEBHOOK_CLIENTS SET ACTIVE = :status WHERE CNPJ = :cnpj`,
+      { status, cnpj },
+      { autoCommit: true }
+    );
+
+    if (status === 'N') {
+      const resultSecret = await conn.execute(
+        `SELECT SECRET_ENC FROM U_WEBHOOK_CLIENTS WHERE CNPJ = :cnpj`,
+        [cnpj]
+      );
+      if (resultSecret.rows?.length) {
+        const [secret_enc] = resultSecret.rows[0] as [string];
+        removeClientFromSecretCache(secret_enc);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Cliente ${status === 'Y' ? 'ativado' : 'desativado'} com sucesso`,
+      cnpj,
+      active: status === 'Y'
+    });
+  } catch (err) {
+    logger.error('[CODE] Erro ao atualizar status do cliente: ', err);
+    return res.status(500).json({ error: 'Erro ao atualizar status do cliente' });
+  } finally {
+    try { await conn?.close(); } catch {}
+  }
+}
